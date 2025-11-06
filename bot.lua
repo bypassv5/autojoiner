@@ -220,17 +220,28 @@ end
 ------------------------------------------------------------
 -- Hop to a random server from list
 ------------------------------------------------------------
+------------------------------------------------------------
+-- pick a server and teleport; if teleport fails, rejoin current server
+------------------------------------------------------------
 local function hopServer()
     local servers = collectServers()
     if #servers == 0 then
-        warn("[Finder] No servers found; waiting and retrying.")
-        task.wait(10)
+        warn("[Finder] No servers found to hop to. Retrying after delay.")
+        task.wait(2)
+        -- if we can't even get a server list, just hard rejoin current place
+        if LocalPlayer then
+            warn("[Finder] Rejoining current server (no server list).")
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(PLACE_ID, game.JobId, LocalPlayer)
+            end)
+        end
         return
     end
 
+    -- pick a random server from the list
     math.randomseed(tick() + os.time())
-    local target = servers[math.random(1, #servers)]
-    log("Hopping to server:", target)
+    local pick = servers[math.random(1, #servers)]
+    log("Hopping to server:", pick)
     task.wait(HOP_DELAY)
 
     if not LocalPlayer then
@@ -238,13 +249,22 @@ local function hopServer()
         return
     end
 
+    -- try teleport to target server
     local ok, err = pcall(function()
-        TeleportService:TeleportToPlaceInstance(PLACE_ID, target, LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(PLACE_ID, pick, LocalPlayer)
     end)
+
     if not ok then
-        warn("[Finder] Teleport failed:", err)
+        warn("[Finder] Teleport to new server failed:", err)
+        -- fallback: rejoin current job
+        task.wait(1)
+        warn("[Finder] Rejoining current server instead...")
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(PLACE_ID, game.JobId, LocalPlayer)
+        end)
     end
 end
+
 
 ------------------------------------------------------------
 -- MAIN LOOP: scan -> (maybe post) -> hop. Always hops.
