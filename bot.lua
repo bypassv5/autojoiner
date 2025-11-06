@@ -161,9 +161,9 @@ local function findAndNotifySecrets()
 
     return false, 0
 end
-
 ------------------------------------------------------------
 -- Collect candidate servers (non-full, not current)
+-- Uses executor http_request instead of HttpService:GetAsync
 ------------------------------------------------------------
 local function collectServers()
     local servers = {}
@@ -173,29 +173,42 @@ local function collectServers()
     repeat
         attempts = attempts + 1
 
-        local ok, raw = pcall(function()
-            return HttpService:GetAsync((
-                "https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100%s"
-            ):format(PLACE_ID, cursor ~= "" and ("&cursor=" .. cursor) or ""))
+        local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Asc&limit=100%s")
+            :format(PLACE_ID, cursor ~= "" and ("&cursor=" .. cursor) or "")
+
+        local ok, res = pcall(function()
+            return http({
+                Url = url,
+                Method = "GET",
+                Headers = {
+                    ["Accept"] = "application/json"
+                }
+            })
         end)
 
-        if not ok or not raw then
+        if not ok or not res or not res.Body then
             warn("[Finder] Failed to fetch server list (attempt " .. attempts .. ")")
+            cursor = ""
             break
         end
 
         local successDecode, decoded = pcall(function()
-            return HttpService:JSONDecode(raw)
+            return HttpService:JSONDecode(res.Body)
         end)
 
         if successDecode and decoded and decoded.data then
             for _, s in ipairs(decoded.data) do
-                if s and s.id and (tonumber(s.playing or 0) < tonumber(s.maxPlayers or 0)) and s.id ~= game.JobId then
+                if s
+                    and s.id
+                    and tonumber(s.playing or 0) < tonumber(s.maxPlayers or 0)
+                    and s.id ~= game.JobId
+                then
                     table.insert(servers, s.id)
                 end
             end
             cursor = decoded.nextPageCursor or ""
         else
+            warn("[Finder] JSON decode failed on server list.")
             cursor = ""
             break
         end
