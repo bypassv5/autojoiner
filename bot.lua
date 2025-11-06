@@ -5,7 +5,7 @@ local MIN_TARGET = 10_000_000
 local API_URL = "http://novachat.elementfx.com/report.php"
 local POLL_DELAY = 1           -- wait after hop in case teleport fails
 local HOP_DELAY  = 0.2           -- small delay before teleport
-local SERVER_FETCH_LIMIT = 10  -- safety cap on server pages
+local SERVER_FETCH_LIMIT = 2  -- safety cap on server pages
 
 -- === SERVICES / ENV ===
 local HttpService = game:GetService("HttpService")
